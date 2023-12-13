@@ -13,7 +13,7 @@ IMAGE_PER_ROW = 5
 IMAGE_ROWS = 7
 PADDING = 5
 FONT_SIZE = 16
-IMAGE_WIDTH = 1536
+IMAGE_WIDTH = 1920
 FONT_NAME = "HelveticaNeue.ttc"
 BACKGROUND_COLOR = "#fff"
 TEXT_COLOR = "#000"
@@ -26,6 +26,15 @@ def get_time_display(time):
 
 def get_random_filename(ext):
     return ''.join([random.choice(string.ascii_lowercase) for _ in range(20)]) + ext
+
+
+def get_text_height(font: ImageFont.FreeTypeFont, text: str) -> int:
+    '''Compatible operation of function ImageDraw.textsize() which has deprecated in Piilow 10.'''
+
+    ascent, descent = font.getmetrics()
+    text_height = (ascent + descent) * (text.count("\n") + 1)
+
+    return text_height
 
 
 def create_thumbnail(filename):
@@ -75,7 +84,7 @@ def create_thumbnail(filename):
         img = Image.new("RGB", (IMAGE_WIDTH, IMAGE_WIDTH), BACKGROUND_COLOR)
         draw = ImageDraw.Draw(img)
         font = ImageFont.truetype(FONT_NAME, FONT_SIZE)
-        _, min_text_height = draw.textsize("\n".join(metadata), font=font)
+        min_text_height = get_text_height(font, "\n".join(metadata))
         image_width_per_img = int(round((IMAGE_WIDTH - PADDING) / IMAGE_PER_ROW)) - PADDING
         image_height_per_img = int(round(image_width_per_img / width * height))
         image_start_y = PADDING * 2 + min_text_height
@@ -99,6 +108,12 @@ def create_thumbnail(filename):
     except Exception as e:
         traceback.print_exc()
     finally:
+        # Close PyAV object
+        try:
+            container.close()
+        except NameError:
+            pass
+        
         os.rename(random_filename, filename)
         if os.path.exists(random_filename_2):
             os.remove(random_filename_2)
